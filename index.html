@@ -75,7 +75,7 @@
         function updateControls() {
             prevBtn.disabled = currentIndex === 0;
             nextBtn.disabled = currentIndex === files.length - 1;
-            fileInfo.textContent = `File ${files[currentIndex]} (${currentIndex + 1}/${files.length})`;
+            fileInfo.textContent = `(${currentIndex + 1}/${files.length})`;
         }
 
         function changeFile(direction) {
