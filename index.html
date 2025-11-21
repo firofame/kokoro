@@ -12,6 +12,9 @@
         button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         #fileInfo { font-size: 18px; font-weight: bold; }
+        .autoplay-toggle { display: flex; align-items: center; gap: 8px; }
+        .autoplay-toggle input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .autoplay-toggle label { cursor: pointer; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -19,6 +22,10 @@
         <button id="prevBtn" onclick="changeFile(-1)">Previous</button>
         <span id="fileInfo">File 001</span>
         <button id="nextBtn" onclick="changeFile(1)">Next</button>
+    </div>
+    <div class="autoplay-toggle">
+        <input type="checkbox" id="autoplayToggle" checked>
+        <label for="autoplayToggle">Autoplay next file</label>
     </div>
     <audio id="audio" controls></audio>
     <div id="text"></div>
@@ -29,6 +36,7 @@
         const fileInfo = document.getElementById('fileInfo');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const autoplayToggle = document.getElementById('autoplayToggle');
 
         // Get all available files from output directory
         const files = [];
@@ -110,6 +118,14 @@
                                     t >= word.start_ts && t <= word.end_ts);
                             }
                         });
+                    };
+
+                    // Autoplay next file when current file ends
+                    audio.onended = () => {
+                        if (autoplayToggle.checked && currentIndex < files.length - 1) {
+                            changeFile(1);
+                            audio.play();
+                        }
                     };
                 })
                 .catch(err => {
