@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Word Highlight</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; }
+        #text { font-size: 24px; line-height: 1.8; }
+        .word.active { background: yellow; font-weight: bold; }
+        audio { width: 100%; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <audio id="audio" controls src="output/001.wav"></audio>
+    <div id="text"></div>
+
+    <script>
+        const textDiv = document.getElementById('text');
+        const audio = document.getElementById('audio');
+
+        fetch('output/001.json')
+            .then(res => res.json())
+            .then(words => {
+                // Render words
+                words.forEach((word, i) => {
+                    const span = document.createElement('span');
+                    span.className = 'word';
+                    span.textContent = word.text;
+                    span.dataset.i = i;
+                    textDiv.appendChild(span);
+                    if (word.whitespace) textDiv.appendChild(document.createTextNode(word.whitespace));
+                });
+
+                // Highlight on playback
+                audio.ontimeupdate = () => {
+                    const t = audio.currentTime;
+                    words.forEach((word, i) => {
+                        document.querySelector(`[data-i="${i}"]`).classList.toggle('active', 
+                            t >= word.start_ts && t <= word.end_ts);
+                    });
+                };
+            });
+    </script>
+</body>
+</html>
