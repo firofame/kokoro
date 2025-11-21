@@ -1,2 +1,0 @@
-I am looking for an AI model that can generate summaries with API access. Affordable monthly pricing works, token-based is fine if it is cheap. Quality output is important. Any recommendations?
-

@@ -8,38 +8,118 @@
         #text { font-size: 24px; line-height: 1.8; }
         .word.active { background: yellow; font-weight: bold; }
         audio { width: 100%; margin-bottom: 20px; }
+        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #fileInfo { font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <audio id="audio" controls src="output/001.wav"></audio>
+    <div class="controls">
+        <button id="prevBtn" onclick="changeFile(-1)">Previous</button>
+        <span id="fileInfo">File 001</span>
+        <button id="nextBtn" onclick="changeFile(1)">Next</button>
+    </div>
+    <audio id="audio" controls></audio>
     <div id="text"></div>
 
     <script>
         const textDiv = document.getElementById('text');
         const audio = document.getElementById('audio');
+        const fileInfo = document.getElementById('fileInfo');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
 
-        fetch('output/001.json')
-            .then(res => res.json())
-            .then(words => {
-                // Render words
-                words.forEach((word, i) => {
-                    const span = document.createElement('span');
-                    span.className = 'word';
-                    span.textContent = word.text;
-                    span.dataset.i = i;
-                    textDiv.appendChild(span);
-                    if (word.whitespace) textDiv.appendChild(document.createTextNode(word.whitespace));
-                });
+        // Get all available files from output directory
+        const files = [];
+        let currentIndex = 0;
 
-                // Highlight on playback
-                audio.ontimeupdate = () => {
-                    const t = audio.currentTime;
-                    words.forEach((word, i) => {
-                        document.querySelector(`[data-i="${i}"]`).classList.toggle('active', 
-                            t >= word.start_ts && t <= word.end_ts);
-                    });
-                };
+        // Initialize: try to find all available files
+        async function initializeFiles() {
+            // Try to detect available files by attempting to fetch them
+            const maxFiles = 100; // reasonable upper limit
+            const promises = [];
+            
+            for (let i = 1; i <= maxFiles; i++) {
+                const num = String(i).padStart(3, '0');
+                promises.push(
+                    fetch(`output/${num}.json`)
+                        .then(res => res.ok ? { num, exists: true } : { num, exists: false })
+                        .catch(() => ({ num, exists: false }))
+                );
+            }
+            
+            const results = await Promise.all(promises);
+            files.length = 0;
+            results.forEach(result => {
+                if (result.exists) {
+                    files.push(result.num);
+                }
             });
+            
+            if (files.length > 0) {
+                currentIndex = 0;
+                loadFile(files[0]);
+                updateControls();
+            }
+        }
+
+        function updateControls() {
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex === files.length - 1;
+            fileInfo.textContent = `File ${files[currentIndex]} (${currentIndex + 1}/${files.length})`;
+        }
+
+        function changeFile(direction) {
+            const newIndex = currentIndex + direction;
+            if (newIndex >= 0 && newIndex < files.length) {
+                currentIndex = newIndex;
+                loadFile(files[currentIndex]);
+                updateControls();
+            }
+        }
+
+        function loadFile(fileNum) {
+            // Clear previous content
+            textDiv.innerHTML = '';
+            audio.pause();
+            
+            // Load new file
+            audio.src = `output/${fileNum}.wav`;
+            
+            fetch(`output/${fileNum}.json`)
+                .then(res => res.json())
+                .then(words => {
+                    // Render words
+                    words.forEach((word, i) => {
+                        const span = document.createElement('span');
+                        span.className = 'word';
+                        span.textContent = word.text;
+                        span.dataset.i = i;
+                        textDiv.appendChild(span);
+                        if (word.whitespace) textDiv.appendChild(document.createTextNode(word.whitespace));
+                    });
+
+                    // Highlight on playback
+                    audio.ontimeupdate = () => {
+                        const t = audio.currentTime;
+                        words.forEach((word, i) => {
+                            const element = document.querySelector(`[data-i="${i}"]`);
+                            if (element) {
+                                element.classList.toggle('active', 
+                                    t >= word.start_ts && t <= word.end_ts);
+                            }
+                        });
+                    };
+                })
+                .catch(err => {
+                    console.error('Error loading file:', err);
+                    textDiv.textContent = 'Error loading file.';
+                });
+        }
+
+        // Initialize on page load
+        initializeFiles();
     </script>
 </body>
 </html>
