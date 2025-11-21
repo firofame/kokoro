@@ -9,6 +9,10 @@ output_dir = "output"
 import os
 os.makedirs(output_dir, exist_ok=True)
 
+# Delete old outputs
+for file in os.listdir(output_dir):
+    os.remove(os.path.join(output_dir, file))
+
 with open(file_name, "r") as f:
     text = f.read()
 
